@@ -5,25 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dear Hellen 💌</title>
 <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
     body {
         font-family: 'Segoe UI', Tahoma, sans-serif;
         min-height: 100vh;
+        min-height: 100dvh;
         display: flex;
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
-        overflow: hidden;
+        overflow-x: hidden;
         position: relative;
+        padding: 16px;
+        touch-action: manipulation;
     }
     .card {
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.94);
         border-radius: 24px;
-        padding: 50px 40px;
+        padding: 40px 24px;
         text-align: center;
         box-shadow: 0 20px 60px rgba(200, 60, 120, 0.35);
-        max-width: 480px;
-        width: 90%;
+        width: 100%;
+        max-width: 440px;
         z-index: 2;
         animation: pop 0.6s ease;
     }
@@ -31,46 +35,69 @@
         from { transform: scale(0.7); opacity: 0; }
         to   { transform: scale(1); opacity: 1; }
     }
-    h1 {
-        font-size: 1.6rem;
-        color: #d6336c;
-        margin-bottom: 14px;
+    h1 { font-size: 1.5rem; color: #d6336c; margin-bottom: 12px; }
+    p  { color: #7a4a5e; margin-bottom: 26px; font-size: 1rem; }
+
+    /* --- Buttons: side by side, always in normal flow --- */
+    .buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        min-height: 60px;
     }
-    p { color: #7a4a5e; margin-bottom: 30px; font-size: 1.05rem; }
-    .buttons { display: flex; gap: 20px; justify-content: center; position: relative; min-height: 80px; }
     button {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: bold;
         border: none;
         border-radius: 50px;
-        padding: 14px 40px;
+        padding: 14px 34px;
         cursor: pointer;
         transition: transform 0.15s;
+        touch-action: manipulation;
     }
     #yesBtn {
         background: linear-gradient(135deg, #ff4d6d, #ff758f);
         color: white;
         box-shadow: 0 8px 20px rgba(255, 77, 109, 0.45);
     }
-    #yesBtn:hover { transform: scale(1.1); }
     #noBtn {
         background: #e9ecef;
         color: #6c757d;
-        position: absolute;   /* so we can move it anywhere on screen */
-        z-index: 3;
     }
-    .hearts span {
-        position: absolute;
-        bottom: -30px;
-        color: rgba(255, 255, 255, 0.7);
-        animation: float 6s linear infinite;
-        pointer-events: none;
-        font-size: 20px;
+
+    /* --- When/Where form (hidden until Yes) --- */
+    #detailsForm { display: none; margin-top: 8px; animation: pop 0.4s ease; }
+    #detailsForm h2 { color: #d6336c; font-size: 1.25rem; margin-bottom: 18px; }
+    .field { margin-bottom: 16px; text-align: left; }
+    .field label {
+        display: block;
+        font-weight: bold;
+        color: #7a4a5e;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
     }
-    @keyframes float {
-        0%   { transform: translateY(0) rotate(0deg); opacity: 0.8; }
-        100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+    .field input, .field select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 2px solid #f3c2d4;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: inherit;
+        background: #fff;
+        color: #333;
     }
+    .field input:focus, .field select:focus { outline: none; border-color: #ff4d6d; }
+    #confirmBtn {
+        width: 100%;
+        margin-top: 6px;
+        background: linear-gradient(135deg, #ff4d6d, #ff758f);
+        color: white;
+        box-shadow: 0 8px 20px rgba(255, 77, 109, 0.45);
+    }
+
+    /* --- Celebration screen --- */
     #celebration {
         display: none;
         position: fixed;
@@ -82,13 +109,27 @@
         color: white;
         text-align: center;
         z-index: 10;
+        padding: 24px;
     }
-    #celebration h2 { font-size: 2.5rem; margin-bottom: 12px; }
-    #celebration p  { font-size: 1.3rem; color: #ffe3ec; }
-    .big-heart { font-size: 4rem; animation: beat 1s infinite; }
+    #celebration h2 { font-size: 2rem; margin-bottom: 10px; }
+    #celebration p  { font-size: 1.15rem; color: #ffe3ec; margin-bottom: 8px; }
+    .big-heart { font-size: 4rem; animation: beat 1s infinite; margin-bottom: 12px; }
     @keyframes beat {
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.3); }
+    }
+
+    /* Floating background hearts */
+    .hearts span {
+        position: fixed;
+        bottom: -30px;
+        color: rgba(255, 255, 255, 0.7);
+        animation: floatUp linear infinite;
+        pointer-events: none;
+    }
+    @keyframes floatUp {
+        0%   { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+        100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
     }
 </style>
 <base target="_blank">
@@ -97,70 +138,112 @@
 
 <div class="hearts" id="hearts"></div>
 
-<div class="card">
+<div class="card" id="mainCard">
     <h1>Dear Hellen 💕</h1>
     <p>Will you go out on a date with me?</p>
     <div class="buttons">
-        <button id="yesBtn">Yes</button>
-        <button id="noBtn">No</button>
+        <button id="yesBtn" type="button">Yes</button>
+        <button id="noBtn" type="button">No</button>
     </div>
+
+    <!-- Shown after she says Yes -->
+    <form id="detailsForm">
+        <h2>Yayyy! Now let's plan it 😍</h2>
+        <div class="field">
+            <label for="when">📅 When?</label>
+            <input type="datetime-local" id="when" required>
+        </div>
+        <div class="field">
+            <label for="where">📍 Where?</label>
+            <input type="text" id="where" placeholder="e.g. That cute coffee shop..." required>
+        </div>
+        <button id="confirmBtn" type="submit">It's a date! 💘</button>
+    </form>
 </div>
 
 <div id="celebration">
     <div class="big-heart">❤️</div>
-    <h2>Yayyy! 🎉</h2>
-    <p>See you on our date, Hellen! 😍</p>
+    <h2>It's a date, Hellen! 🎉</h2>
+    <p id="summaryWhen"></p>
+    <p id="summaryWhere"></p>
 </div>
 
 <script>
     const noBtn = document.getElementById('noBtn');
     const yesBtn = document.getElementById('yesBtn');
+    const buttonsRow = document.querySelector('.buttons');
+    const detailsForm = document.getElementById('detailsForm');
     const celebration = document.getElementById('celebration');
     const taunts = ['No', 'Nope 😜', 'Try again!', 'Catch me!', 'Nah 😝', 'Not today!', 'Missed me!'];
     let tauntIndex = 0;
     let dodges = 0;
 
     function moveNoButton() {
-        // Move the No button to a random position anywhere on the screen
-        const pad = 10;
-        const maxX = window.innerWidth - noBtn.offsetWidth - pad;
-        const maxY = window.innerHeight - noBtn.offsetHeight - pad;
-        const x = Math.max(pad, Math.random() * maxX);
-        const y = Math.max(pad, Math.random() * maxY);
-        noBtn.style.position = 'fixed';
-        noBtn.style.left = x + 'px';
-        noBtn.style.top = y + 'px';
+        // Dodge WITHIN the buttons row only — buttons never overlap,
+        // the No button just hops to a random side.
+        const rowWidth = buttonsRow.offsetWidth;
+        const noWidth = noBtn.offsetWidth;
+        // Random horizontal offset inside the row, keeping it fully visible
+        const maxOffset = Math.max(0, rowWidth - noWidth);
+        const x = Math.random() * maxOffset;
+        // Random small vertical hop inside the row so it feels alive
+        const y = (Math.random() - 0.5) * 30;
 
-        // Tease a little after a few dodges
+        // Temporarily switch No to fixed positioning relative to the row's rect
+        const rect = noBtn.getBoundingClientRect();
+        noBtn.style.position = 'fixed';
+        noBtn.style.left = (buttonsRow.getBoundingClientRect().left + x) + 'px';
+        noBtn.style.top = (rect.top + y) + 'px';
+
         dodges++;
         if (dodges >= 3) {
             noBtn.textContent = taunts[tauntIndex % taunts.length];
             tauntIndex++;
         }
-        // Shrink No slightly, grow Yes — so "Yes" becomes irresistible
+        // Shrink No, grow Yes
         const scale = Math.max(0.6, 1 - dodges * 0.05);
         noBtn.style.transform = 'scale(' + scale + ')';
         yesBtn.style.transform = 'scale(' + (1 + dodges * 0.04) + ')';
     }
 
-    // Flee on hover AND on any touch/click attempt
+    // Works on touch (mobile) AND hover/click (desktop)
+    noBtn.addEventListener('touchstart', function(e) { e.preventDefault(); moveNoButton(); }, { passive: false });
     noBtn.addEventListener('mouseenter', moveNoButton);
-    noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(); });
-    noBtn.addEventListener('click', (e) => { e.preventDefault(); moveNoButton(); });
+    noBtn.addEventListener('click', function(e) { e.preventDefault(); moveNoButton(); });
 
-    yesBtn.addEventListener('click', () => {
+    // YES → ask when & where
+    yesBtn.addEventListener('click', function() {
+        buttonsRow.style.display = 'none';
+        detailsForm.style.display = 'block';
+        detailsForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // Confirm → celebration with the plan
+    detailsForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const whenVal = document.getElementById('when').value;
+        const whereVal = document.getElementById('where').value;
+        if (whenVal) {
+            const d = new Date(whenVal);
+            document.getElementById('summaryWhen').textContent =
+                '📅 ' + d.toLocaleString(undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        } else {
+            document.getElementById('summaryWhen').textContent = '📅 Soon!';
+        }
+        document.getElementById('summaryWhere').textContent = '📍 ' + (whereVal || 'Somewhere special');
+        document.getElementById('mainCard').style.display = 'none';
         celebration.style.display = 'flex';
     });
 
     // Floating background hearts
     const heartsContainer = document.getElementById('hearts');
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 18; i++) {
         const s = document.createElement('span');
         s.textContent = '❤';
         s.style.left = Math.random() * 100 + 'vw';
         s.style.animationDelay = (Math.random() * 6) + 's';
         s.style.animationDuration = (4 + Math.random() * 4) + 's';
-        s.style.fontSize = (12 + Math.random() * 20) + 'px';
+        s.style.fontSize = (12 + Math.random() * 18) + 'px';
         heartsContainer.appendChild(s);
     }
 </script>
